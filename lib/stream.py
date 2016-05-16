@@ -37,12 +37,6 @@ class Listener(tweepy.streaming.StreamListener):
     def on_error(self, status):
         raise StreamError(status)
 
-    def on_event(self, status):
-        if status.event == 'favorite':
-            self.queue.put(status)
-        else:
-            pass
-
 
 class StreamRecieverThread(Thread):
 
@@ -72,11 +66,5 @@ def tweetassembler(status):
             r = re.compile(".*連絡.*")
             if re.match(r, status.text):
                 return_info(status)
-    except AttributeError:
-        if status.event == 'favorite':
-            target_user = status.target
-            source_user = status.source
-            target = status.target_object
-            print("{0} favorited {1}'s tweet:".format(
-                source_user['name'], target_user['name']))
-            print(target_user['name'] + ' | ' + target['text'])
+    except Exception:
+        raise
