@@ -23,13 +23,13 @@ def get_weather(status=None):
         weather = j['Feature'][0]['Property']['WeatherList']['Weather']
         past = observation(weather)
         will = forecast(weather)
-        name = j['Feature'][0]['Name'].replace('天気', '降雨')
-        name = name.replace('地点(135.77705,35.051482)', '松ヶ崎')
         if status is not None:
             head = '@' + status.user.screen_name
             api.update_status(
-                status=head + name + "\n" + past + "\n" + will, in_reply_to_status_id=status.id)
+                status=head + "\n" + past + "\n" + will, in_reply_to_status_id=status.id)
         else:
+            name = j['Feature'][0]['Name'].replace('天気', '降雨')
+            name = name.replace('地点(135.77705,35.051482)', '松ヶ崎')
             api.update_status(
                 status=name + "\n" + past + "\n" + will)
 
