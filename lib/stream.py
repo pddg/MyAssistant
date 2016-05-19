@@ -3,14 +3,13 @@ import time
 import re
 import lib.settings as settings
 from threading import Thread
+from lib.auth import api, auth
+from lib.mention_action import return_cancel, return_info, return_info_by_id
+from lib.rainfall import get_weather
+from lib.weather import return_weather_auto
 
-auth = tweepy.OAuthHandler(settings.CK, settings.CS)
-auth.set_access_token(settings.AT, settings.AS)
-api = tweepy.API(auth_handler=auth, wait_on_rate_limit=True)
 mydata = api.me()
 myid = mydata.id
-
-from lib.mention_action import return_cancel, return_info
 
 
 class StreamError(Exception):
@@ -66,5 +65,14 @@ def tweetassembler(status):
             r = re.compile(".*連絡.*")
             if re.match(r, status.text):
                 return_info(status)
+            r = re.compile('@\S*\s[0-9]+')
+            if re.match(r, status.text):
+                return_info_by_id(status)
+            r = re.compile(".*雨.*")
+            if re.match(r, status.text):
+                get_weather(status)
+            r = re.compile(".*天気.*")
+            if re.match(r, status.text):
+                return_weather_auto(status)
     except Exception:
         raise

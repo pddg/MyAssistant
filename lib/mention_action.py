@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
+import re
 from sqlalchemy import text
 from lib.session import Session
 from lib.models import Cancel, Info
 from lib.settings import my_subjects
-from lib.stream import api
+from lib.auth import api
 
 
 def judge_date(text):
@@ -38,7 +39,7 @@ def return_cancel(status):
         date = judge_date(status.text)
         if date is False:
             api.update_status(
-                status='日付を解析できませんでした．', in_reply_to_status_id=status.id)
+                status=' 日付を解析できませんでした．', in_reply_to_status_id=status.id)
         info_list = []
         with Session() as sess:
             query = sess.query(Cancel)
@@ -61,7 +62,8 @@ def return_cancel(status):
                     status=head + t, in_reply_to_status_id=status.id_str)
         else:
             api.update_status(
-                status=head + ' 休講はありません．残念でしたね．', in_reply_to_status_id=status.id_str)
+                status=head + ' 休講はありません．残念でしたね．',
+                in_reply_to_status_id=status.id_str)
     except Exception:
         raise
 
@@ -76,15 +78,37 @@ def return_info(status):
             info_list = query.filter(Info.subject.in_(m_sub)).all()
         if len(info_list) is 0:
             api.update_status(
-                status=head + '現在受講中の科目に関して，授業関係連絡は掲示されていません．', in_reply_to_status_id=status.id_str)
+                status=head + ' 現在受講中の科目に関して，授業関係連絡は掲示されていません．',
+                in_reply_to_status_id=status.id_str)
             return False
         s = ""
         for i in info_list:
             s = s + "\n{0}: {1}({2})".format(i.abstract, i.subject, i.id)
         if len(s) > 120:
             for i in info_list:
-                s = s + "\n{1}({2})".format(i.subject, i.id)
+                s = s + "\n{0}({1})".format(i.subject, i.id)
         api.update_status(status=head + s, in_reply_to_status_id=status.id_str)
+    except Exception:
+        raise
+
+
+def return_info_by_id(status):
+    try:
+        head = '@' + status.user.screen_name
+        r = re.compile('(?<=\s)[0-9]+')
+        info_num = re.search(r, status.text)
+        txt = "授業名: {0}\n教員名: {1}\n概要: {2}\n詳細: {3}\n掲載日: {4}\n更新日: {5}"
+        with Session() as sess:
+            query = sess.query(Info)
+            info = query.filter(Info.id == info_num.group()).first()
+            if info is not None:
+                txt = txt.format(
+                    info.subject, info.teacher, info.abstract,
+                    info.detail, info.first, info.up_date)
+                api.send_direct_message(user_id=status.user.id, text=txt)
+            else:
+                api.update_status(status=head + " 存在しないIDです．",
+                                  in_reply_to_status_id=status.id_str)
     except Exception:
         raise
 
@@ -98,3 +122,42 @@ def split_list(l):
     i -= 1
     s_list = [l[o:o + i] for o in range(0, len(l), i)]
     return s_list
+
+
+def get_today_cancel(date):
+    try:
+        d = "{0}/{1}/{2}".format(date.year, date.month, date.day)
+        cancels = []
+        with Session() as sess:
+            query = sess.query(Cancel)
+            cancels = query.filter(Cancel.day == d).all()
+        cancels = judge_my_subjects(cancels)
+        if len(cancels) == 0:
+            return "本日休講はありません．"
+        else:
+            s = ""
+            for c in cancels:
+                t = "{0}({1})".format(c.subject, c.id)
+                s = s + t + "\n"
+            return "本日の休講\n" + s
+    except Exception:
+        raise
+
+
+def get_today_info():
+    try:
+        info_list = []
+        m_sub = [s.encode('utf-8') for s in my_subjects]
+        with Session() as sess:
+            query = sess.query(Info)
+            info_list = query.filter(Info.subject.in_(m_sub)).all()
+        if len(info_list) == 0:
+            return "現在掲示中の授業関係連絡はありません．"
+        else:
+            s = ""
+            for c in info_list:
+                t = "{0}: {1}({2})".format(c.abstract, c.subject, c.id)
+                s = s + t + "\n"
+            return s
+    except Exception:
+        raise
