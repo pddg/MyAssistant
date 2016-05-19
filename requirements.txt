@@ -1,0 +1,7 @@
+oauthlib==1.1.1
+PyMySQL==0.7.2
+requests==2.10.0
+requests-oauthlib==0.6.1
+six==1.10.0
+SQLAlchemy==1.0.12
+tweepy==3.5.0
