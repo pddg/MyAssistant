@@ -27,7 +27,8 @@ def StartThreads():
         time.sleep(1)
 
 if __name__ == "__main__":
-    try:
-        StartThreads()
-    except Exception:
-        pass
+    while True:
+        try:
+            StartThreads()
+        except Exception:
+            raise
