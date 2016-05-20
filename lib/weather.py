@@ -54,7 +54,7 @@ def return_weather_auto(status=None):
         api.update_status(status=head + t, in_reply_to_status_id=status.id)
     else:
         api.update_status(status=t)
-        if forecast[2] is not '晴れ':
+        if "晴れ" not in forecast[2]:
             get_weather()
 
 if __name__ == "__main__":
