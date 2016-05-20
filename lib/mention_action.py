@@ -63,13 +63,15 @@ def return_cancel(status):
                     status=head + t, in_reply_to_status_id=status.id_str)
         else:
             api.update_status(
-                status=head + ' {0}休講はありません．残念でしたね．'.format(d.strftime("%m/%d %H:%M")),
+                status=head +
+                ' {0}休講はありません．残念でしたね．'.format(d.strftime("%m/%d %H:%M")),
                 in_reply_to_status_id=status.id_str)
     except Exception:
         raise
 
 
 def return_info(status):
+    d = datetime.now()
     try:
         info_list = []
         head = '@' + status.user.screen_name
@@ -79,7 +81,9 @@ def return_info(status):
             info_list = query.filter(Info.subject.in_(m_sub)).all()
         if len(info_list) is 0:
             api.update_status(
-                status=head + ' {0}現在受講中の科目に関して，授業関係連絡は掲示されていません．'.format(d.strftime("%m/%d %H:%M"),
+                status=head +
+                ' {0}現在受講中の科目に関して，授業関係連絡は掲示されていません．'.format(
+                    d.strftime("%m/%d %H:%M")),
                 in_reply_to_status_id=status.id_str)
             return False
         s = ""
