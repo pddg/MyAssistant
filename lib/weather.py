@@ -55,8 +55,8 @@ def return_weather_auto(status=None):
         max_t = " max:{0}度,".format(f["max"])
     t = "{0}の{1}は{2}".format(
         f["date"], f["title"], f["telop"]) + max_t + min_t + "\n"
-    if len(t + f['desc']) > 103:
-        num = len(t + f["desc"]) - 103
+    if len(t + f['desc']) > 102:
+        num = len(t + f["desc"]) - 102
         f["desc"] = f["desc"][:-num]
     t = t + f["desc"] + ' ' + f["link"]
     if status is not None:
