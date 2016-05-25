@@ -58,7 +58,7 @@ def return_weather_auto(status=None):
     if len(t + f['desc']) > 103:
         num = len(t + f["desc"]) - 103
         f["desc"] = f["desc"][:-num]
-    t = t + f["desc"]
+    t = t + f["desc"] + ' ' + f["link"]
     if status is not None:
         tweet(t, status)
     else:
