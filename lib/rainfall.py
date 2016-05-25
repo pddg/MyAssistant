@@ -2,7 +2,7 @@ import json
 import urllib.request as request
 import urllib.parse as parse
 from lib.settings import myapp
-from lib.auth import api
+from lib.tweet import tweet
 
 
 def get_weather(status=None):
@@ -14,24 +14,19 @@ def get_weather(status=None):
     j = json.loads(response.read().decode('utf-8'))
     if 'Error' in j:
         if status is not None:
-            head = '@' + status.user.screen_name
-            api.update_status(status=head + " APIサーバがダウンしています．",
-                              in_reply_to_status_id=status.id)
+            tweet("APIサーバがダウンしています．", status)
         else:
-            api.update_status(status="Yahooの気象情報APIサーバがダウンしています．")
+            tweet("Yahooの気象情報APIサーバがダウンしています．")
     else:
         weather = j['Feature'][0]['Property']['WeatherList']['Weather']
         past = observation(weather)
         will = forecast(weather)
         if status is not None:
-            head = '@' + status.user.screen_name
-            api.update_status(
-                status=head + "\n" + past + "\n" + will, in_reply_to_status_id=status.id)
+            tweet("\n" + past + "\n" + will, status)
         else:
             name = j['Feature'][0]['Name'].replace('天気', '降雨')
             name = name.replace('地点(135.77705,35.051482)', '松ヶ崎')
-            api.update_status(
-                status=name + "\n" + past + "\n" + will)
+            tweet(name + "\n" + past + "\n" + will)
 
 
 def observation(weather):
@@ -75,5 +70,5 @@ def forecast(weather):
         for num in f:
             i += num
         f_c = "{0}時{1}分〜{2}時{3}分にかけて最大{4}mm，平均{5}mm程度の雨が降る予報です．".format(
-            st[8:10], st[10:12], ed[8:10], ed[10:12], str(f[0]), str(i / float(len(f))))
+            st[8:10], st[10:12], ed[8:10], ed[10:12], str(f[0]), str(round(i / float(len(f)), 3)))
     return f_c

@@ -1,7 +1,7 @@
 from datetime import datetime
 from lib.weather import return_weather_auto
 from lib.mention_action import get_today_cancel, get_today_info
-from lib.auth import api
+from lib.tweet import tweet
 
 
 def day_job():
@@ -11,8 +11,8 @@ def day_job():
         if 16 < d.hour <= 24:
             pass
         else:
-            api.update_status(status=get_today_cancel(d))
-            api.update_status(status=get_today_info())
+            tweet(get_today_cancel(d))
+            tweet(get_today_info())
     except Exception:
         raise
 

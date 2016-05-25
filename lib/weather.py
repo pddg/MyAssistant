@@ -1,8 +1,8 @@
 import urllib.request as request
 from datetime import datetime, timedelta
 import json
-from lib.auth import api
 from lib.rainfall import get_weather
+from lib.tweet import tweet
 
 
 def get_json():
@@ -25,10 +25,14 @@ def parse_forecast_auto():
         # 明日の天気
         d += timedelta(days=1)
     f = parse_date(j['forecasts'], d.strftime("%Y-%m-%d"))
-    return [f['dateLabel'], j['title'], f['telop'],
-            f['temperature']['max']['celsius'],
-            f['temperature']['min']['celsius'], desc,
-            j['link']]
+    max_temp = f['temperature']['max']
+    min_temp = f['temperature']['min']
+    if max_temp is not None:
+        max_temp = max_temp['celsius']
+    if min_temp is not None:
+        min_temp = min_temp['celsius']
+    return {"date": f['dateLabel'], "title": j['title'], "telop": f['telop'],
+            "max": max_temp, "min": min_temp, "desc": desc, "link": j['link']}
 
 
 def parse_date(fc_list, date):
@@ -42,19 +46,24 @@ def parse_date(fc_list, date):
 
 
 def return_weather_auto(status=None):
-    forecast = parse_forecast_auto()
-    t = "{0}の{1}は{2}．max:{3}度，min:{4}度\n{5}".format(*forecast[0:6])
-    if len(t) > 103:
-        num = len(t) - 103
-        forecast[5] = forecast[5][:-num]
-    t = "{0}の{1}は{2}．max:{3}度，min:{4}度\n{5}".format(
-        *forecast[0:6]) + ' ' + forecast[6]
+    f = parse_forecast_auto()
+    max_t = ""
+    min_t = ""
+    if f["min"] is not None:
+        min_t = " min:{0}度,".format(f['min'])
+    if f["max"] is not None:
+        max_t = " max:{0}度,".format(f["max"])
+    t = "{0}の{1}は{2}".format(
+        f["date"], f["title"], f["telop"]) + max_t + min_t + "\n"
+    if len(t + f['desc']) > 103:
+        num = len(t + f["desc"]) - 103
+        f["desc"] = f["desc"][:-num]
+    t = t + f["desc"]
     if status is not None:
-        head = '@' + status.user.screen_name + ' '
-        api.update_status(status=head + t, in_reply_to_status_id=status.id)
+        tweet(t, status)
     else:
-        api.update_status(status=t)
-        if "晴れ" not in forecast[2]:
+        tweet(t)
+        if "晴れ" not in f["telop"]:
             get_weather()
 
 if __name__ == "__main__":

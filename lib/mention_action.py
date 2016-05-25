@@ -5,6 +5,7 @@ from lib.session import Session
 from lib.models import Cancel, Info
 from lib.settings import my_subjects
 from lib.auth import api
+from tweet import tweet
 
 
 def judge_date(text):
@@ -39,8 +40,7 @@ def return_cancel(status):
     try:
         date = judge_date(status.text)
         if date is False:
-            api.update_status(
-                status=' 日付を解析できませんでした．', in_reply_to_status_id=status.id)
+            tweet(' 日付を解析できませんでした．', status)
         info_list = []
         with Session() as sess:
             query = sess.query(Cancel)
@@ -51,21 +51,16 @@ def return_cancel(status):
                     text('day=:day')).params(day=date).all()
         s = judge_my_subjects(info_list)
         t = ', '.join(s)
-        head = '@' + status.user.screen_name
         if 0 < len(t) < 100:
-            api.update_status(
-                status=head + t, in_reply_to_status_id=status.id_str)
+            tweet(t, status)
         elif 100 <= len(t):
             a = split_list(s)
             for one in a:
                 t = ', '.join(one)
-                api.update_status(
-                    status=head + t, in_reply_to_status_id=status.id_str)
+                tweet(t, status)
         else:
-            api.update_status(
-                status=head +
-                ' {0}休講はありません．残念でしたね．'.format(d.strftime("%m/%d %H:%M")),
-                in_reply_to_status_id=status.id_str)
+            tweet('{0} 休講はありません．残念でしたね．'.format(
+                d.strftime("%m/%d %H:%M")), status)
     except Exception:
         raise
 
@@ -74,17 +69,13 @@ def return_info(status):
     d = datetime.now()
     try:
         info_list = []
-        head = '@' + status.user.screen_name
         m_sub = [s.encode('utf-8') for s in my_subjects]
         with Session() as sess:
             query = sess.query(Info)
             info_list = query.filter(Info.subject.in_(m_sub)).all()
         if len(info_list) is 0:
-            api.update_status(
-                status=head +
-                ' {0}現在受講中の科目に関して，授業関係連絡は掲示されていません．'.format(
-                    d.strftime("%m/%d %H:%M")),
-                in_reply_to_status_id=status.id_str)
+            tweet('{0} 現在受講中の科目に関して，授業関係連絡は掲示されていません．'.format(
+                d.strftime("%m/%d %H:%M")), status)
             return False
         s = ""
         for i in info_list:
@@ -92,14 +83,13 @@ def return_info(status):
         if len(s) > 120:
             for i in info_list:
                 s = s + "\n{0}({1})".format(i.subject, i.id)
-        api.update_status(status=head + s, in_reply_to_status_id=status.id_str)
+        tweet(s, status)
     except Exception:
         raise
 
 
 def return_info_by_id(status):
     try:
-        head = '@' + status.user.screen_name
         r = re.compile('(?<=\s)[0-9]+')
         info_num = re.search(r, status.text)
         txt = "授業名: {0}\n教員名: {1}\n概要: {2}\n詳細: {3}\n掲載日: {4}\n更新日: {5}"
@@ -112,8 +102,7 @@ def return_info_by_id(status):
                     info.detail, info.first, info.up_date)
                 api.send_direct_message(user_id=status.user.id, text=txt)
             else:
-                api.update_status(status=head + " 存在しないIDです．",
-                                  in_reply_to_status_id=status.id_str)
+                tweet("存在しないIDです．", status)
     except Exception:
         raise
 
