@@ -5,7 +5,7 @@ from lib.session import Session
 from lib.models import Cancel, Info
 from lib.settings import my_subjects
 from lib.auth import api
-from tweet import tweet
+from lib.tweet import tweet
 
 
 def judge_date(text):
