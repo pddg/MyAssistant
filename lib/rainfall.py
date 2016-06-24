@@ -22,11 +22,11 @@ def get_weather(status=None):
         past = observation(weather)
         will = forecast(weather)
         if status is not None:
-            print("\n" + past + "\n" + will, status)
+            tweet("\n" + past + "\n" + will, status)
         else:
             name = j['Feature'][0]['Name'].replace('天気', '降雨')
             name = name.replace('地点(135.77705,35.051482)', '松ヶ崎')
-            print(name + "\n" + past + "\n" + will)
+            tweet(name + "\n" + past + "\n" + will)
 
 
 def observation(weather):
@@ -71,6 +71,3 @@ def forecast(weather):
         f_c = "{0}時{1}分〜{2}時{3}分にかけて最大{4}mm，平均{5}mm程度の雨が降る予報です．".format(
             st[8:10], st[10:12], ed[8:10], ed[10:12], str(f[0]), str(round(i / float(len(f)), 3)))
     return f_c
-
-if __name__ == "__main__":
-    get_weather()
