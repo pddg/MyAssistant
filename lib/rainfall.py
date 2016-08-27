@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 import urllib.request as request
 import urllib.parse as parse
 from lib.settings import myapp
@@ -22,53 +23,43 @@ def get_weather(status=None):
         past = observation(weather)
         will = forecast(weather)
         if status is not None:
-            tweet("\n" + past + "\n" + will, status)
+            tweet(past + "\n" + will, status)
         else:
-            name = j['Feature'][0]['Name'].replace('天気', '降雨')
-            name = name.replace('地点(135.77705,35.051482)', '松ヶ崎')
-            tweet(name + "\n" + past + "\n" + will)
+            tweet(past + "\n" + will)
 
 
 def observation(weather):
-    i = 0
-    r_f = 0.0
-    while 'observation' in weather[i]:
-        r_f += weather[i]['Rainfall']
-        i += 1
-    i += 1
-    past_ave = r_f / float(len(weather[0:i]))
-    past = ''
-    if past_ave == 0.0:
-        past = '過去{0}分間に雨は降っていません．'.format(str(10 * i))
+    ob = [r for r in weather if r['Type'] == "observation"]
+    ob_rain = [r['Rainfall'] for r in ob]
+    past_min = str(10 * (len(ob_rain)))
+    if sum(ob_rain) == 0.0:
+        past = '過去{0}分間に雨は降っていません．'.format(past_min)
     else:
-        past = '過去{0}分間の平均降水量は{1}です．'.format(str(10 * i), str(past_ave))
+        ave = round(sum(ob_rain) / float(len(ob_rain)), 1)
+        past = '過去{0}分間の平均降水量は{1}mmです．'.format(past_min, str(ave))
     return past
 
 
 def forecast(weather):
-    i = 0
-    while 'observation' in weather[i]:
-        print(weather[i]['Rainfall'])
-        i += 1
-    f = []
-    for w in weather[i:]:
-        f.append(w['Rainfall'])
-    # 昇順に
-    f.sort()
-    # 降順に
-    f.reverse()
-    f_c = ""
+    fo = [r for r in weather if r['Type'] == "forecast"]
     # 最初のforecastのDate
-    st = weather[i]['Date']
+    st = fo[0]['Date']
     # 最後のDate
-    ed = weather[len(weather) - 1]['Date']
-    if f[0] == 0.0:
+    ed = fo[len(fo) - 1]['Date']
+    fo_rain = [r['Rainfall'] for r in fo]
+    # 昇順に
+    fo_rain.sort()
+    # 逆に(値の小さい順に)
+    fo_rain.reverse()
+    if fo_rain[0] == 0.0:
         f_c = "{0}時{1}分〜{2}時{3}分の間，雨が降る予報はありません.".format(
             st[8:10], st[10:12], ed[8:10], ed[10:12])
     else:
-        i = 0.0
-        for num in f:
-            i += num
-        f_c = "{0}時{1}分〜{2}時{3}分にかけて最大{4}mm，平均{5}mm程度の雨が降る予報です．".format(
-            st[8:10], st[10:12], ed[8:10], ed[10:12], str(f[0]), str(round(i / float(len(f)), 3)))
+        fo_rain_sum = sum(fo_rain)
+        each_rain = ""
+        for f in fo:
+            time = datetime.strptime(f['Date'], "%Y%m%d%H%M")
+            each = "{date} {rain}\n".format(date=time.strftime('%H:%M'), rain=f['Rainfall'])
+            each_rain += each
+        f_c = each_rain + "平均{}mm程度の雨が降る予報です．".format(str(round(fo_rain_sum / float(len(fo_rain)), 3)))
     return f_c
